@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
+export PATH := $(HOME)/.local/share/mise/shims:$(PATH)
 
 ZELLIJ_REPO ?= https://github.com/zellij-org/zellij
 ZELLIJ_REV ?= a8d99b64a3fe73284b0954da7daabf04da1c432d
@@ -12,11 +13,15 @@ DATA_HOME ?= $(HOME)/.local/share/zellij-main
 CONFIG_DIR ?=
 CARGO ?= cargo
 
-.PHONY: help check install wrapper uninstall purge reinstall info
+.DEFAULT_GOAL := install
+
+.PHONY: help deps check install wrapper uninstall purge reinstall info
 
 help:
 	@printf '%s\n' \
 	  'Targets:' \
+	  '  make              Build and install (default)' \
+	  '  make deps         Install build dependencies via mise' \
 	  '  make install      Build and install pinned zellij main side-by-side' \
 	  '  make wrapper      Recreate the zellij-main wrapper only' \
 	  '  make uninstall    Remove the wrapper and installed binary' \
@@ -30,6 +35,11 @@ help:
 	  '  WRAPPER_NAME=<name>    Wrapper command name (default: zellij-main)' \
 	  '  CONFIG_DIR=<path>      Optional zellij --config-dir for the wrapper'
 
+deps:
+	@command -v mise >/dev/null || { printf 'mise not found. Install from https://mise.jdx.dev\n'; exit 1; }
+	mise install
+	@printf 'Dependencies installed via mise\n'
+
 check:
 	@command -v git >/dev/null
 	@command -v $(CARGO) >/dev/null
@@ -40,7 +50,7 @@ check:
 	@printf 'rustc:  %s\n' "$$(rustc --version)"
 	@printf 'protoc: %s\n' "$$(protoc --version)"
 
-install: check
+install: deps check
 	@mkdir -p "$(INSTALL_ROOT)" "$(BIN_DIR)" "$(CACHE_HOME)" "$(DATA_HOME)"
 	$(CARGO) install --locked \
 	  --git "$(ZELLIJ_REPO)" \
