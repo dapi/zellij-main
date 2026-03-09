@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [ZELLIJ_REV]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read ZELLIJ_REV
+        id: rev
+        run: |
+          REV=$(cat ZELLIJ_REV | tr -d '[:space:]')
+          SHORT=$(echo "$REV" | head -c 7)
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          echo "short=$SHORT" >> "$GITHUB_OUTPUT"
+
+      - name: Get upstream version
+        id: version
+        run: |
+          VERSION=$(curl -sL "https://raw.githubusercontent.com/zellij-org/zellij/${{ steps.rev.outputs.rev }}/Cargo.toml" \
+            | sed -n '/\[workspace.package\]/,/\[/p' \
+            | grep -m1 '^version' | sed 's/.*"\(.*\)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          TAG="v${VERSION}-${{ steps.rev.outputs.short }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install protoc
+        if: steps.check.outputs.exists == 'false'
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust toolchain
+        if: steps.check.outputs.exists == 'false'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo cache
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ steps.rev.outputs.rev }}
+          restore-keys: cargo-
+
+      - name: Build zellij
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          cargo install --locked \
+            --git https://github.com/zellij-org/zellij \
+            --rev ${{ steps.rev.outputs.rev }} \
+            --root ./dist \
+            zellij
+
+      - name: Create release
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          REV="${{ steps.rev.outputs.rev }}"
+          gh release create "$TAG" \
+            ./dist/bin/zellij \
+            --title "$TAG" \
+            --notes "Built from [zellij-org/zellij@${REV:0:7}](https://github.com/zellij-org/zellij/commit/$REV)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

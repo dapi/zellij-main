@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 export PATH := $(HOME)/.local/share/mise/shims:$(PATH)
 
 ZELLIJ_REPO ?= https://github.com/zellij-org/zellij
-ZELLIJ_REV ?= a8d99b64a3fe73284b0954da7daabf04da1c432d
+ZELLIJ_REV ?= $(shell cat ZELLIJ_REV 2>/dev/null)
 INSTALL_ROOT ?= $(HOME)/.local/opt/zellij-main
 BIN_DIR ?= $(HOME)/.local/bin
 WRAPPER_NAME ?= zellij-main
