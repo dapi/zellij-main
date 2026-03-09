@@ -43,22 +43,39 @@ The newer `main` branch already exposes better primitives for this area, includi
 
 So this repo is not the final status solution by itself. It is the reproducible test harness that lets us check whether unreleased `zellij` functionality is good enough to simplify our tab-status architecture.
 
-## Requirements
+## Install from Release (recommended)
 
-- `git`
-- `cargo`
-- `rustc`
-- `protoc`
+Download the prebuilt binary from GitHub Releases — no Rust toolchain needed:
 
-If you want to build the exact commit pinned here, use the Rust toolchain expected by upstream for that revision.
+```bash
+# Download the latest release binary
+curl -sL "$(curl -s https://api.github.com/repos/dapi/zellij-main/releases/latest \
+  | grep browser_download_url | cut -d '"' -f 4)" \
+  -o /tmp/zellij
 
-## Install
+# Install to the standard location
+install -Dm755 /tmp/zellij ~/.local/opt/zellij-main/bin/zellij
+```
+
+Then create the wrapper (requires this repo):
+
+```bash
+git clone git@github.com:dapi/zellij-main.git
+cd zellij-main
+make wrapper
+```
+
+## Install from Source
+
+Build from source if you need a custom configuration or don't want to use the prebuilt binary:
 
 ```bash
 git clone git@github.com:dapi/zellij-main.git
 cd zellij-main
 make install
 ```
+
+Requires `git`, `cargo`, `rustc`, `protoc`.
 
 This installs the binary to:
 
