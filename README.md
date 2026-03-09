@@ -43,31 +43,47 @@ The newer `main` branch already exposes better primitives for this area, includi
 
 So this repo is not the final status solution by itself. It is the reproducible test harness that lets us check whether unreleased `zellij` functionality is good enough to simplify our tab-status architecture.
 
-## Install from Release (recommended)
+## Install from Release
 
-Download the prebuilt binary from GitHub Releases — no Rust toolchain needed:
+Download the prebuilt Linux x86_64 binary from GitHub Releases — no Rust toolchain needed.
+
+### Quick install (no cache isolation)
+
+The simplest option. Good enough if you don't have a stable `zellij` installed, or don't care about cache separation:
 
 ```bash
-# Download the latest release binary
+curl -sL "$(curl -s https://api.github.com/repos/dapi/zellij-main/releases/latest \
+  | grep browser_download_url | cut -d '"' -f 4)" \
+  -o ~/.local/bin/zellij-main
+chmod +x ~/.local/bin/zellij-main
+```
+
+This puts the binary directly into `PATH` as `zellij-main`. It will share `XDG_CACHE_HOME` and `XDG_DATA_HOME` with your stable `zellij` (if any).
+
+### Full install (with cache isolation)
+
+Use this if you run a stable `zellij` release alongside and want to keep their caches completely separate. The wrapper script overrides `XDG_CACHE_HOME` and `XDG_DATA_HOME` so the prerelease build never touches stable cache files:
+
+```bash
+# Download the binary
 curl -sL "$(curl -s https://api.github.com/repos/dapi/zellij-main/releases/latest \
   | grep browser_download_url | cut -d '"' -f 4)" \
   -o /tmp/zellij
-
-# Install to the standard location
 install -Dm755 /tmp/zellij ~/.local/opt/zellij-main/bin/zellij
-```
 
-Then create the wrapper (requires this repo):
-
-```bash
+# Create the isolation wrapper
 git clone git@github.com:dapi/zellij-main.git
 cd zellij-main
 make wrapper
 ```
 
+The wrapper at `~/.local/bin/zellij-main` sets isolated paths before exec-ing the binary:
+- Cache: `~/.cache/zellij-main`
+- Data: `~/.local/share/zellij-main`
+
 ## Install from Source
 
-Build from source if you need a custom configuration or don't want to use the prebuilt binary:
+Build from source if you need a custom configuration or want to build a different commit:
 
 ```bash
 git clone git@github.com:dapi/zellij-main.git
@@ -75,19 +91,7 @@ cd zellij-main
 make install
 ```
 
-Requires `git`, `cargo`, `rustc`, `protoc`.
-
-This installs the binary to:
-
-```text
-~/.local/opt/zellij-main/bin/zellij
-```
-
-and creates the wrapper:
-
-```text
-~/.local/bin/zellij-main
-```
+Requires `git`, `cargo`, `rustc`, `protoc`. Creates both the binary and the isolation wrapper.
 
 ## Usage
 
