@@ -1,0 +1,89 @@
+SHELL := /usr/bin/env bash
+.SHELLFLAGS := -eu -o pipefail -c
+
+ZELLIJ_REPO ?= https://github.com/zellij-org/zellij
+ZELLIJ_REV ?= a8d99b64a3fe73284b0954da7daabf04da1c432d
+INSTALL_ROOT ?= $(HOME)/.local/opt/zellij-main
+BIN_DIR ?= $(HOME)/.local/bin
+WRAPPER_NAME ?= zellij-main
+WRAPPER_PATH ?= $(BIN_DIR)/$(WRAPPER_NAME)
+CACHE_HOME ?= $(HOME)/.cache/zellij-main
+DATA_HOME ?= $(HOME)/.local/share/zellij-main
+CONFIG_DIR ?=
+CARGO ?= cargo
+
+.PHONY: help check install wrapper uninstall purge reinstall info
+
+help:
+	@printf '%s\n' \
+	  'Targets:' \
+	  '  make install      Build and install pinned zellij main side-by-side' \
+	  '  make wrapper      Recreate the zellij-main wrapper only' \
+	  '  make uninstall    Remove the wrapper and installed binary' \
+	  '  make purge        uninstall + remove isolated cache/data dirs' \
+	  '  make reinstall    Reinstall from scratch' \
+	  '  make info         Print effective configuration' \
+	  '' \
+	  'Overrides:' \
+	  '  ZELLIJ_REV=<commit>    Pin a different commit' \
+	  '  INSTALL_ROOT=<path>    Installation root for cargo --root' \
+	  '  WRAPPER_NAME=<name>    Wrapper command name (default: zellij-main)' \
+	  '  CONFIG_DIR=<path>      Optional zellij --config-dir for the wrapper'
+
+check:
+	@command -v git >/dev/null
+	@command -v $(CARGO) >/dev/null
+	@command -v rustc >/dev/null
+	@command -v protoc >/dev/null
+	@printf 'git:    %s\n' "$$(git --version)"
+	@printf 'cargo:  %s\n' "$$($(CARGO) --version)"
+	@printf 'rustc:  %s\n' "$$(rustc --version)"
+	@printf 'protoc: %s\n' "$$(protoc --version)"
+
+install: check
+	@mkdir -p "$(INSTALL_ROOT)" "$(BIN_DIR)" "$(CACHE_HOME)" "$(DATA_HOME)"
+	$(CARGO) install --locked \
+	  --git "$(ZELLIJ_REPO)" \
+	  --rev "$(ZELLIJ_REV)" \
+	  --root "$(INSTALL_ROOT)" \
+	  zellij
+	@$(MAKE) wrapper
+	@printf 'Installed zellij main at %s\n' "$(INSTALL_ROOT)/bin/zellij"
+
+wrapper:
+	@mkdir -p "$(BIN_DIR)" "$(CACHE_HOME)" "$(DATA_HOME)"
+	@{ \
+	  printf '%s\n' '#!/usr/bin/env bash'; \
+	  printf '%s\n' 'set -euo pipefail'; \
+	  printf 'export XDG_CACHE_HOME=%q\n' "$(CACHE_HOME)"; \
+	  printf 'export XDG_DATA_HOME=%q\n' "$(DATA_HOME)"; \
+	  if [[ -n "$(CONFIG_DIR)" ]]; then \
+	    printf 'exec %q --config-dir %q "$$@"\n' "$(INSTALL_ROOT)/bin/zellij" "$(CONFIG_DIR)"; \
+	  else \
+	    printf 'exec %q "$$@"\n' "$(INSTALL_ROOT)/bin/zellij"; \
+	  fi; \
+	} > "$(WRAPPER_PATH)"
+	@chmod +x "$(WRAPPER_PATH)"
+	@printf 'Wrapper written to %s\n' "$(WRAPPER_PATH)"
+
+uninstall:
+	@rm -f "$(WRAPPER_PATH)"
+	@rm -rf "$(INSTALL_ROOT)"
+	@printf 'Removed %s and %s\n' "$(WRAPPER_PATH)" "$(INSTALL_ROOT)"
+	@printf 'Kept cache/data: %s %s\n' "$(CACHE_HOME)" "$(DATA_HOME)"
+
+purge: uninstall
+	@rm -rf "$(CACHE_HOME)" "$(DATA_HOME)"
+	@printf 'Removed cache/data: %s %s\n' "$(CACHE_HOME)" "$(DATA_HOME)"
+
+reinstall: uninstall install
+
+info:
+	@printf '%s\n' \
+	  "ZELLIJ_REPO=$(ZELLIJ_REPO)" \
+	  "ZELLIJ_REV=$(ZELLIJ_REV)" \
+	  "INSTALL_ROOT=$(INSTALL_ROOT)" \
+	  "WRAPPER_PATH=$(WRAPPER_PATH)" \
+	  "CACHE_HOME=$(CACHE_HOME)" \
+	  "DATA_HOME=$(DATA_HOME)" \
+	  "CONFIG_DIR=$(CONFIG_DIR)"
