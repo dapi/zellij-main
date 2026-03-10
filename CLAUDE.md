@@ -18,6 +18,8 @@ make reinstall            # uninstall then install
 make info                 # Print effective configuration variables
 make deps                 # Install build deps via mise (currently just protoc)
 make check                # Verify git, cargo, rustc, protoc are available
+make install-replace      # Remove old zellij + install pinned main as ~/.local/bin/zellij
+make remove-old-zellij    # Detect and remove system-installed zellij
 ```
 
 ## Build Requirements
