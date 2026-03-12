@@ -81,6 +81,20 @@ The wrapper at `~/.local/bin/zellij-main` sets isolated paths before exec-ing th
 - Cache: `~/.cache/zellij-main`
 - Data: `~/.local/share/zellij-main`
 
+### Replace system zellij
+
+If you want to use the pinned `main` build as your primary `zellij` (not side-by-side):
+
+> **Note:** If zellij is installed via `apt`, `snap`, or `brew`, remove it first through the respective package manager.
+
+```bash
+git clone git@github.com:dapi/zellij-main.git
+cd zellij-main
+make install-replace
+```
+
+This downloads the prebuilt binary from GitHub Releases and installs it as `~/.local/bin/zellij`. No Rust toolchain required.
+
 ## Install from Source
 
 Build from source if you need a custom configuration or want to build a different commit:

@@ -132,13 +132,13 @@ remove-old-zellij:
 	  printf 'No existing zellij installation found.\n'; \
 	fi
 
-install-replace: deps check remove-old-zellij
+install-replace: remove-old-zellij
 	@mkdir -p "$(REPLACE_ROOT)/bin"
-	$(CARGO) install --locked \
-	  --git "$(ZELLIJ_REPO)" \
-	  --rev "$(ZELLIJ_REV)" \
-	  --root "$(REPLACE_ROOT)" \
-	  zellij
+	@printf 'Downloading zellij from latest GitHub Release...\n'
+	@curl -fSL "$$(curl -fSs https://api.github.com/repos/dapi/zellij-main/releases/latest \
+	  | grep browser_download_url | cut -d '"' -f 4)" \
+	  -o "$(REPLACE_ROOT)/bin/zellij"
+	@chmod +x "$(REPLACE_ROOT)/bin/zellij"
 	@printf 'Installed zellij at %s/bin/zellij\n' "$(REPLACE_ROOT)"
 
 info:
