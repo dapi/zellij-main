@@ -20,8 +20,8 @@ This repo exists for one practical reason: we want to test unreleased `zellij` f
 
 Right now this matters because the `main` branch already contains new tab APIs based on stable `tab_id` values. That is directly relevant to our work on tab status handling in:
 
-- `zellij-tab-status`
-- `zjstatus`
+- [`zellij-tab-status`](https://github.com/dapi/zellij-tab-status)
+- [`zjstatus`](https://github.com/dapi/zjstatus)
 
 Our current released version (`0.43.1`) still pushes us toward awkward workarounds around tab renaming and tab identity. Testing `main` side-by-side lets us validate the newer APIs before the next official release.
 
